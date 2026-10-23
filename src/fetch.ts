@@ -1,8 +1,9 @@
 import { graphql } from "@octokit/graphql";
+import type { RawUser } from "./stats.ts";
 
 export async function fetchStats(login: string, token: string) {
   const gql = graphql.defaults({ headers: { authorization: `token ${token}` } });
-  return gql<any>(`
+  return gql<{ user: RawUser }>(`
     query($login: String!) {
       user(login: $login) {
         name
