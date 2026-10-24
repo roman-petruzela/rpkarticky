@@ -168,7 +168,7 @@ text { font-size: ${SIZE}px; fill: ${p.fg}; }
 .val { fill: ${p.fg}; font-weight: 700; }
 .head { fill: ${p.dim}; font-weight: 700; font-size: 11.5px; }
 .big { font-size: 30px; font-weight: 700; fill: ${p.fg}; }`,
-      body: `<rect x="0" y="0" width="${W}" height="${height}" rx="10" fill="${p.bg}"/>
+      body: `<rect width="${W}" height="${height}" fill="${p.bg}"/>
 ${activity(ctx, M, M + 4, inner, topH)}
 ${statsBox(ctx, M, botY, statsW, botH)}
 ${langsBox(ctx, M + statsW + GAP, botY, langsW, botH)}

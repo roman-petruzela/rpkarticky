@@ -179,7 +179,7 @@ text { font-size: 12px; fill: ${p.fg}; }
 .small { font-size: 11.5px; }
 .dim { fill: ${p.dim}; }
 .faint { font-size: 10.5px; fill: ${p.dim}; }`,
-      body: `<rect x="0" y="0" width="${W}" height="${height}" rx="14" fill="${p.surface}"/>
+      body: `<rect width="${W}" height="${height}" fill="${p.surface}"/>
 ${top.svg}
 ${heat.svg}
 ${statsWindow(ctx, GAP, rowY, half, rowH)}

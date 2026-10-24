@@ -82,7 +82,7 @@ export const pacman: Design = {
       height,
       title: `${s.name}'s GitHub stats`,
       style: `text { font-size: ${SIZE}px; }`,
-      body: `<rect x="0.5" y="0.5" width="${W - 1}" height="${height - 1}" rx="10" fill="${p.bg}" stroke="${p.line}"/>
+      body: `<rect width="${W}" height="${height}" fill="${p.bg}"/><rect x="0.5" y="0.5" width="${W - 1}" height="${height - 1}" fill="none" stroke="${p.line}"/>
 ${out.join("\n")}`,
     });
   },
