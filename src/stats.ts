@@ -17,13 +17,14 @@ export type Stats = {
   contributionsYear: number; // last 365 days
   currentStreak: number;
   longestStreak: number;
-  // last 365 days, Monday first
+  // last 365 days, Sunday first like GitHub
   weekdays: number[];
-  // last 53 weeks, oldest first; each week Monday..Sunday, null = outside range
+  // last 53 weeks, oldest first; each week Sunday..Saturday, null = outside range
   heatmap: (number | null)[][];
   // weekly totals of the heatmap columns
   weekly: number[];
-  languages: Language[];
+  languages: Language[]; // top N only
+  languageCount: number; // all distinct languages across own repos
 };
 
 function streaks(days: Day[]) {
@@ -57,7 +58,10 @@ function languages(user: RawUser, top: number) {
 
   const sorted = [...sizes].sort((a, b) => b[1].size - a[1].size).slice(0, top);
   const total = sorted.reduce((sum, [, l]) => sum + l.size, 0);
-  return sorted.map(([name, l]) => ({ name, color: l.color, percent: (l.size / total) * 100 }));
+  return {
+    top: sorted.map(([name, l]) => ({ name, color: l.color, percent: (l.size / total) * 100 })),
+    count: sizes.size,
+  };
 }
 
 export function computeStats(user: RawUser, login: string, topLangs = 8): Stats {
@@ -71,18 +75,16 @@ export function computeStats(user: RawUser, login: string, topLangs = 8): Stats 
   const { current, longest } = streaks(days);
   const lastYear = days.slice(-365);
 
-  // GitHub weekday: 0 = Sunday, shift so Monday is 0
-  const mondayIndex = (d: Day) => (d.weekday + 6) % 7;
-
+  // GitHub weekday: 0 = Sunday
   const weekdays = Array<number>(7).fill(0);
-  for (const d of lastYear) weekdays[mondayIndex(d)]! += d.count;
+  for (const d of lastYear) weekdays[d.weekday]! += d.count;
 
   // 53 columns ending with the current week
   const recent = days.slice(-(52 * 7 + 7));
   const heatmap: (number | null)[][] = [];
   let week: (number | null)[] = Array(7).fill(null);
   for (const d of recent) {
-    const i = mondayIndex(d);
+    const i = d.weekday;
     if (i === 0 && week.some((v) => v !== null)) {
       heatmap.push(week);
       week = Array(7).fill(null);
@@ -93,6 +95,7 @@ export function computeStats(user: RawUser, login: string, topLangs = 8): Stats 
   const grid = heatmap.slice(-53);
 
   const thisYear = new Date().getUTCFullYear();
+  const langs = languages(user, topLangs);
 
   return {
     login,
@@ -112,6 +115,7 @@ export function computeStats(user: RawUser, login: string, topLangs = 8): Stats 
     weekdays,
     heatmap: grid,
     weekly: grid.map((w) => w.reduce<number>((sum, v) => sum + (v ?? 0), 0)),
-    languages: languages(user, topLangs),
+    languages: langs.top,
+    languageCount: langs.count,
   };
 }

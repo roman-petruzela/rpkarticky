@@ -4,7 +4,7 @@ import { charW, escape, fmt, level, mix, svg, truncate, type Ctx, type Design } 
 const W = 840;
 const GAP = 12; // niri "gaps"
 const RADIUS = 10;
-const DAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 // niri's focus ring sits outside the window with a small offset
@@ -67,13 +67,13 @@ function heatmapWindow(ctx: Ctx, x: number, y: number, w: number) {
   let out = window(x, y, w, h, ctx, true);
   out += `<text x="${x + 20}" y="${y + 26}" class="title">${fmt(s.contributionsYear)} contributions <tspan class="dim" font-weight="400">in the last year</tspan></text>`;
 
-  // month labels at the first column whose Monday falls into a new month
+  // month labels at the first column whose Sunday falls into a new month
   const today = new Date();
-  const monday = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
-  monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7));
+  const sunday = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+  sunday.setUTCDate(sunday.getUTCDate() - sunday.getUTCDay());
   let lastMonth = -1;
   s.heatmap.forEach((week, c) => {
-    const d = new Date(monday);
+    const d = new Date(sunday);
     d.setUTCDate(d.getUTCDate() - (s.heatmap.length - 1 - c) * 7);
     if (d.getUTCMonth() !== lastMonth && c < s.heatmap.length - 2) {
       if (lastMonth !== -1 || d.getUTCDate() <= 7) {
@@ -86,7 +86,8 @@ function heatmapWindow(ctx: Ctx, x: number, y: number, w: number) {
       out += `<rect x="${gx + c * step}" y="${gy + r * step}" width="${cell}" height="${cell}" rx="2.5" fill="${shades[level(v, max)]}"><title>${v}</title></rect>`;
     });
   });
-  [0, 2, 4].forEach((r) => {
+  // GitHub labels Mon, Wed, Fri
+  [1, 3, 5].forEach((r) => {
     out += `<text x="${x + 20}" y="${gy + r * step + 9}" class="faint">${DAYS[r]}</text>`;
   });
 
@@ -103,7 +104,7 @@ function statsWindow(ctx: Ctx, x: number, y: number, w: number, h: number) {
     { icon: icons.repo, color: p.blue, value: s.repos, label: "repositories" },
     { icon: icons.pr, color: p.magenta, value: s.prs, label: "pull requests" },
     { icon: icons.forked, color: p.cyan, value: s.contributedTo, label: "contributed to" },
-    { icon: icons.code, color: p.green, value: s.languages.length, label: "languages" },
+    { icon: icons.code, color: p.green, value: s.languageCount, label: "languages used" },
   ];
   const colW = (w - 40) / 2;
   const rowH = (h - 32) / 4;

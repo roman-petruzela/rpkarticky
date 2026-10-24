@@ -109,7 +109,7 @@ function langsBox({ stats: s, p }: Ctx, x: number, y: number, w: number, h: numb
   const lx = x + 16;
   const rx = x + w - 16;
   const max = Math.max(...s.languages.map((l) => l.percent));
-  let out = box(x, y, w, h, 3, "languages", p.magenta, p, `${s.languages.length} of ${s.repos} repos`);
+  let out = box(x, y, w, h, 3, "languages", p.magenta, p, `top ${s.languages.length} of ${s.languageCount}`);
   out += `<text x="${lx}" y="${y + 28}" class="head">Language</text><text x="${rx}" y="${y + 28}" text-anchor="end" class="head">Share</text>`;
   s.languages.forEach((l, i) => {
     const ty = y + 48 + i * 17.5;
@@ -121,7 +121,7 @@ function langsBox({ stats: s, p }: Ctx, x: number, y: number, w: number, h: numb
 }
 
 function weekBox({ stats: s, p }: Ctx, x: number, y: number, w: number, h: number) {
-  const days = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+  const days = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
   const max = Math.max(...s.weekdays, 1);
   const best = s.weekdays.indexOf(max);
   const cells = 10;
@@ -137,7 +137,7 @@ function weekBox({ stats: s, p }: Ctx, x: number, y: number, w: number, h: numbe
     }
     out += `<text x="${cx.toFixed(2)}" y="${baseY + 14}" text-anchor="middle" class="${i === best ? "val" : "dim"}">${days[i]}</text>`;
   });
-  out += `<text x="${x + w / 2}" y="${baseY + 28}" text-anchor="middle" class="faint">busiest: ${["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][best]}</text>`;
+  out += `<text x="${x + w / 2}" y="${baseY + 28}" text-anchor="middle" class="faint">busiest: ${["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][best]}</text>`;
   return out;
 }
 
