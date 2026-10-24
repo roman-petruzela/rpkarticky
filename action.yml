@@ -1,0 +1,33 @@
+name: rpkarticky
+description: Generate GitHub stats and top languages cards as SVG for your profile README
+author: roman-petruzela
+branding:
+  icon: bar-chart-2
+  color: blue
+
+inputs:
+  token:
+    description: Token used to read stats. Default token sees only public repos, use a PAT with 'repo' scope to include private ones.
+    default: ${{ github.token }}
+  username:
+    description: GitHub login to generate cards for
+    default: ${{ github.repository_owner }}
+  output-dir:
+    description: Directory where SVGs are written
+    default: .
+  commit:
+    description: Commit and push the SVGs when they change
+    default: "true"
+  commit-message:
+    description: Message of the update commit
+    default: "chore: update stats cards"
+  keepalive:
+    description: Re-enable the workflow on every run so GitHub does not disable the schedule after 60 days of inactivity (needs 'actions: write')
+    default: "true"
+  keepalive-token:
+    description: Token used for keepalive
+    default: ${{ github.token }}
+
+runs:
+  using: node24
+  main: dist/index.js
