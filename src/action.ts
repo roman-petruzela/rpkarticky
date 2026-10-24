@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import * as core from "@actions/core";
-import { generate } from "./generate.ts";
+import { loadStats, writeCards } from "./generate.ts";
 
 const git = (...args: string[]) => execFileSync("git", args, { encoding: "utf8" });
 
@@ -43,9 +43,9 @@ try {
   const token = core.getInput("token", { required: true });
   const login = core.getInput("username", { required: true });
   const outDir = core.getInput("output-dir") || ".";
-  const theme = core.getInput("theme") || "tokyonight";
+  const design = core.getInput("design") || "niri";
 
-  const paths = await generate(login, token, outDir, theme);
+  const paths = writeCards(await loadStats(login, token), outDir, design);
   core.info(`Generated ${paths.join(", ")}`);
 
   if (core.getBooleanInput("commit")) {

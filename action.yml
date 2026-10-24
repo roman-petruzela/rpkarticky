@@ -12,9 +12,9 @@ inputs:
   username:
     description: "GitHub login to generate cards for"
     default: ${{ github.repository_owner }}
-  theme:
-    description: "Card theme: tokyonight or terminal"
-    default: tokyonight
+  design:
+    description: "Card design: niri, btop, fetch or pacman"
+    default: niri
   output-dir:
     description: "Directory where SVGs are written"
     default: .

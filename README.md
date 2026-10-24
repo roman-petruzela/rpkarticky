@@ -33,38 +33,20 @@ Run it once manually (Actions → stats → Run workflow), then put the cards in
   <source media="(prefers-color-scheme: dark)" srcset="stats-dark.svg">
   <img src="stats-light.svg" alt="GitHub stats">
 </picture>
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="langs-dark.svg">
-  <img src="langs-light.svg" alt="Most used languages">
-</picture>
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="activity-dark.svg">
-  <img src="activity-light.svg" alt="Activity">
-</picture>
 ```
 
-Every card is generated in a dark and a light variant, `<picture>` switches them according to the viewer's GitHub theme.
+The card is generated in a dark and a light variant, `<picture>` switches them according to the viewer's GitHub theme.
 
-## Cards
+## Designs
 
-- `stats`: stars, commits in the last year, PRs, issues, repositories, repositories contributed to
-- `langs`: top 6 languages across your own non-fork repos, by code size
-- `activity`: current and longest streak, contributions in the last year, contributions per weekday
+Every design shows stars, commits (all time), current and longest streak, repositories, pull requests, contributed to and top languages, each in its own way. All use the [Tokyo Night](https://github.com/folke/tokyonight.nvim) palette and an embedded JetBrains Mono Nerd Font subset, so they look the same for every visitor.
 
-## Themes
+- `niri` (default): waybar with weekdays as workspaces, tiled windows with a contribution heatmap, stats with icons and a language donut
+- `btop`: system monitor boxes with a dotted weekly activity graph, stat meters, languages as a process table and a weekday graph
+- `fetch`: fastfetch output with the Arch logo, languages as the color blocks
+- `pacman`: `pacman -Qi` package info, languages installed with ILoveCandy progress bars
 
-- `tokyonight` (default): [Tokyo Night](https://github.com/folke/tokyonight.nvim) night and day palettes
-- `terminal`: terminal window with a prompt, monospace font, Arch blue accent
-
-### Private repos
-
-The default token only sees public repos. To include private ones, create a classic PAT with the `repo` scope, save it as the `STATS_TOKEN` secret and pass it:
-
-```yaml
-      - uses: roman-petruzela/rpkarticky@v1
-        with:
-          token: ${{ secrets.STATS_TOKEN }}
-```
+Run `npm run dev` and open `preview/index.html` to compare them.
 
 ## Inputs
 
@@ -72,7 +54,7 @@ The default token only sees public repos. To include private ones, create a clas
 | --- | --- | --- |
 | `token` | `github.token` | Token used to read stats |
 | `username` | repo owner | Login to generate cards for |
-| `theme` | `tokyonight` | `tokyonight` or `terminal` |
+| `design` | `niri` | `niri`, `btop`, `fetch` or `pacman` |
 | `output-dir` | `.` | Where SVGs are written |
 | `commit` | `true` | Commit and push SVGs when they change |
 | `commit-message` | `chore: update stats cards` | Message of the update commit |
@@ -87,9 +69,11 @@ GitHub disables scheduled workflows in public repos after 60 days without activi
 
 ```sh
 npm install
-npm run dev                             # all themes for the gh-authenticated user, open preview/index.html
-npm run dev -- torvalds                 # any other user
-npm run dev -- --theme terminal         # single theme
+npm run dev                      # all designs for the gh-authenticated user, open preview/index.html
+npm run dev -- torvalds          # any other user
+npm run dev -- --design btop     # single design
+npm run dev -- --cached          # reuse preview/stats.json, no API calls
+python3 scripts/build-fonts.py   # regenerate src/fonts.ts (needs fonttools + brotli)
 npm run build            # bundle into dist/, commit it together with sources
 ```
 

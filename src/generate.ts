@@ -1,25 +1,22 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fetchStats } from "./fetch.ts";
-import { computeStats } from "./stats.ts";
-import { cards } from "./render.ts";
-import { getTheme, type Mode } from "./themes.ts";
+import { computeStats, type Stats } from "./stats.ts";
+import { getDesign, palettes, type Mode } from "./designs/index.ts";
 
 const MODES: Mode[] = ["dark", "light"];
 
-// Shared by cli.ts and action.ts, writes <card>-<mode>.svg and returns their paths
-export async function generate(login: string, token: string, outDir: string, themeName: string) {
-  const theme = getTheme(themeName);
-  const stats = computeStats(await fetchStats(login, token), login);
+export async function loadStats(login: string, token: string) {
+  return computeStats(await fetchStats(login, token), login);
+}
 
+// Writes <file>-dark.svg and <file>-light.svg, returns their paths
+export function writeCards(stats: Stats, outDir: string, designName: string, file = "stats") {
+  const design = getDesign(designName);
   mkdirSync(outDir, { recursive: true });
-  const paths: string[] = [];
-  for (const [name, render] of Object.entries(cards)) {
-    for (const mode of MODES) {
-      const path = join(outDir, `${name}-${mode}.svg`);
-      writeFileSync(path, render({ theme, p: theme[mode], stats }));
-      paths.push(path);
-    }
-  }
-  return paths;
+  return MODES.map((mode) => {
+    const path = join(outDir, `${file}-${mode}.svg`);
+    writeFileSync(path, design.render({ stats, p: palettes[mode], mode }));
+    return path;
+  });
 }
