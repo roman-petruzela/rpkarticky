@@ -28,9 +28,33 @@ jobs:
 
 Run it once manually (Actions → stats → Run workflow), then put the cards into your `README.md`:
 
-```md
-<img src="stats.svg" height="165"> <img src="langs.svg" height="165">
+```html
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="stats-dark.svg">
+  <img src="stats-light.svg" alt="GitHub stats">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="langs-dark.svg">
+  <img src="langs-light.svg" alt="Most used languages">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="activity-dark.svg">
+  <img src="activity-light.svg" alt="Activity">
+</picture>
 ```
+
+Every card is generated in a dark and a light variant, `<picture>` switches them according to the viewer's GitHub theme.
+
+## Cards
+
+- `stats`: stars, commits in the last year, PRs, issues, repositories, repositories contributed to
+- `langs`: top 6 languages across your own non-fork repos, by code size
+- `activity`: current and longest streak, contributions in the last year, contributions per weekday
+
+## Themes
+
+- `tokyonight` (default): [Tokyo Night](https://github.com/folke/tokyonight.nvim) night and day palettes
+- `terminal`: terminal window with a prompt, monospace font, Arch blue accent
 
 ### Private repos
 
@@ -48,6 +72,7 @@ The default token only sees public repos. To include private ones, create a clas
 | --- | --- | --- |
 | `token` | `github.token` | Token used to read stats |
 | `username` | repo owner | Login to generate cards for |
+| `theme` | `tokyonight` | `tokyonight` or `terminal` |
 | `output-dir` | `.` | Where SVGs are written |
 | `commit` | `true` | Commit and push SVGs when they change |
 | `commit-message` | `chore: update stats cards` | Message of the update commit |
@@ -62,8 +87,9 @@ GitHub disables scheduled workflows in public repos after 60 days without activi
 
 ```sh
 npm install
-npm run dev              # cards for the gh-authenticated user, written to preview/
-npm run dev -- torvalds  # any other user
+npm run dev                             # all themes for the gh-authenticated user, open preview/index.html
+npm run dev -- torvalds                 # any other user
+npm run dev -- --theme terminal         # single theme
 npm run build            # bundle into dist/, commit it together with sources
 ```
 

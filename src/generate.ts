@@ -2,21 +2,24 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fetchStats } from "./fetch.ts";
 import { computeStats } from "./stats.ts";
-import { renderLangs, renderStats } from "./render.ts";
+import { cards } from "./render.ts";
+import { getTheme, type Mode } from "./themes.ts";
 
-// Shared by cli.ts and action.ts, returns paths of written files
-export async function generate(login: string, token: string, outDir: string) {
+const MODES: Mode[] = ["dark", "light"];
+
+// Shared by cli.ts and action.ts, writes <card>-<mode>.svg and returns their paths
+export async function generate(login: string, token: string, outDir: string, themeName: string) {
+  const theme = getTheme(themeName);
   const stats = computeStats(await fetchStats(login, token), login);
 
   mkdirSync(outDir, { recursive: true });
-  const files = {
-    "stats.svg": renderStats(stats),
-    "langs.svg": renderLangs(stats),
-  };
-
-  return Object.entries(files).map(([name, svg]) => {
-    const path = join(outDir, name);
-    writeFileSync(path, svg);
-    return path;
-  });
+  const paths: string[] = [];
+  for (const [name, render] of Object.entries(cards)) {
+    for (const mode of MODES) {
+      const path = join(outDir, `${name}-${mode}.svg`);
+      writeFileSync(path, render({ theme, p: theme[mode], stats }));
+      paths.push(path);
+    }
+  }
+  return paths;
 }

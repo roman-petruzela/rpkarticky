@@ -29,6 +29,7 @@ export async function fetchStats(login: string, token: string): Promise<RawUser>
         user(login: $login) {
           name
           repositories(ownerAffiliations: OWNER, isFork: false, first: 100, after: $cursor) {
+            totalCount
             pageInfo { hasNextPage endCursor }
             nodes {
               stargazerCount
@@ -37,7 +38,13 @@ export async function fetchStats(login: string, token: string): Promise<RawUser>
               }
             }
           }
-          contributionsCollection { totalCommitContributions }
+          contributionsCollection {
+            totalCommitContributions
+            contributionCalendar {
+              totalContributions
+              weeks { contributionDays { date contributionCount weekday } }
+            }
+          }
           pullRequests { totalCount }
           issues { totalCount }
           repositoriesContributedTo(first: 1) { totalCount }

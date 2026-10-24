@@ -43,8 +43,9 @@ try {
   const token = core.getInput("token", { required: true });
   const login = core.getInput("username", { required: true });
   const outDir = core.getInput("output-dir") || ".";
+  const theme = core.getInput("theme") || "tokyonight";
 
-  const paths = await generate(login, token, outDir);
+  const paths = await generate(login, token, outDir, theme);
   core.info(`Generated ${paths.join(", ")}`);
 
   if (core.getBooleanInput("commit")) {
