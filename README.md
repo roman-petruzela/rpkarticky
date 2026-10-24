@@ -1,22 +1,38 @@
 # rpkarticky
 
-GitHub Action that generates stats and top languages cards as SVG and commits them into your profile repo. No server, no rate limits of shared instances.
+GitHub stats card for your profile README, styled like a Linux desktop: a waybar on top and tiled btop boxes below. A GitHub Action generates it once a day and commits it into your profile repo. No server, no shared rate limits.
 
-## Usage
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/preview-dark.svg">
+  <img src="docs/preview-light.svg" alt="rpkarticky card">
+</picture>
 
-Add `.github/workflows/stats.yml` to your `<username>/<username>` repo:
+What's on it:
+
+- **bar**: contributions per weekday as workspaces (the busiest one is active), current and longest streak, the year you joined
+- **activity**: contributions per week over the last year as a dotted graph with total, peak and average, the last 7 days as tiles
+- **stats**: stars, commits (all time), repositories, pull requests, repos contributed to, languages used
+- **languages**: your top 8 languages by code size
+
+It comes in a dark and a light variant that follows the viewer's GitHub theme. Colors from [Tokyo Night](https://github.com/folke/tokyonight.nvim).
+
+## Add it to your profile
+
+You need your profile repository, the one named after your username (`<username>/<username>`).
+
+**1.** In that repository, create `.github/workflows/stats.yml`:
 
 ```yaml
 name: stats
 
 on:
   schedule:
-    - cron: "0 3 * * *"
+    - cron: "0 3 * * *" # every day at 3:00 UTC
   workflow_dispatch:
 
 permissions:
-  contents: write   # commit the SVGs
-  actions: write    # keepalive
+  contents: write # commit the card
+  actions: write # keep the daily schedule alive
 
 jobs:
   stats:
@@ -26,7 +42,9 @@ jobs:
       - uses: roman-petruzela/rpkarticky@v1
 ```
 
-Run it once manually (Actions → stats → Run workflow), then put the cards into your `README.md`:
+**2.** Run it once: **Actions** → **stats** → **Run workflow**. After a few seconds, `stats-dark.svg` and `stats-light.svg` appear in your repository.
+
+**3.** Put the card into your `README.md`:
 
 ```html
 <picture>
@@ -35,46 +53,55 @@ Run it once manually (Actions → stats → Run workflow), then put the cards in
 </picture>
 ```
 
-The card is generated in a dark and a light variant, `<picture>` switches them according to the viewer's GitHub theme.
+That's it. The card refreshes every day and is only committed when something changed.
 
-## Designs
+### Include private repositories
 
-Every design shows stars, commits (all time), current and longest streak, repositories, pull requests, contributed to and top languages, each in its own way. All use the [Tokyo Night](https://github.com/folke/tokyonight.nvim) palette and an embedded JetBrains Mono Nerd Font subset, so they look the same for every visitor.
+By default the action only sees your public repositories. To count private ones too:
 
-- `niri` (default): waybar with weekdays as workspaces, tiled windows with a contribution heatmap, stats with icons and a language donut
-- `btop`: system monitor boxes with a dotted weekly activity graph, stat meters, languages as a process table and a weekday graph
-- `fetch`: fastfetch output with the Arch logo, languages as the color blocks
-- `pacman`: `pacman -Qi` package info, languages installed with ILoveCandy progress bars
+1. Create a [classic token](https://github.com/settings/tokens/new) with the `repo` scope.
+2. Add it to your profile repository as a secret named `STATS_TOKEN` (**Settings** → **Secrets and variables** → **Actions**).
+3. Pass it to the action:
 
-Run `npm run dev` and open `preview/index.html` to compare them.
+```yaml
+      - uses: roman-petruzela/rpkarticky@v1
+        with:
+          token: ${{ secrets.STATS_TOKEN }}
+```
 
-## Inputs
+## Options
 
 | Input | Default | Description |
 | --- | --- | --- |
-| `token` | `github.token` | Token used to read stats |
-| `username` | repo owner | Login to generate cards for |
-| `design` | `niri` | `niri`, `btop`, `fetch` or `pacman` |
-| `output-dir` | `.` | Where SVGs are written |
-| `commit` | `true` | Commit and push SVGs when they change |
-| `commit-message` | `chore: update stats cards` | Message of the update commit |
-| `keepalive` | `true` | Re-enable the workflow on every run |
+| `token` | `github.token` | Token used to read your stats, see [private repositories](#include-private-repositories) |
+| `username` | repo owner | Whose stats to show |
+| `output-dir` | `.` | Folder the SVGs are written to |
+| `commit` | `true` | Commit and push the card when it changes |
+| `commit-message` | `chore: update stats cards` | Message of that commit |
+| `keepalive` | `true` | Keep the daily schedule running, see below |
 | `keepalive-token` | `github.token` | Token used for keepalive |
 
-### Keepalive
+## FAQ
 
-GitHub disables scheduled workflows in public repos after 60 days without activity. Since a commit is only made when the stats change, a quiet profile would lose its schedule. With `keepalive` on, every run re-enables its own workflow through the API, which keeps the schedule alive without any commits. Needs `actions: write`.
+**The card didn't change after an update.** GitHub caches images for a few minutes. Reload the page with Ctrl+Shift+R.
+
+**Why does it need `actions: write`?** GitHub turns off scheduled workflows in repositories without activity for 60 days. Since the action only commits when your stats change, a quiet profile would lose its schedule. On every run, the action re-enables its own workflow through the API, which resets that timer without any commit. Without the permission the card still works, you'll just see a warning.
+
+**What counts as a commit?** Commits GitHub attributes to you in its contribution graph, summed over every year since you joined. Private ones are included only with a `repo` token and if [private contributions are visible](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-github-profile/managing-contribution-settings-on-your-profile/showing-your-private-contributions-and-achievements-on-your-profile) on your profile.
 
 ## Development
 
 ```sh
 npm install
-npm run dev                      # all designs for the gh-authenticated user, open preview/index.html
+npm run dev                      # card for your gh account, open preview/index.html
 npm run dev -- torvalds          # any other user
-npm run dev -- --design btop     # single design
 npm run dev -- --cached          # reuse preview/stats.json, no API calls
+npm run build                    # bundle into dist/, commit it together with the sources
 python3 scripts/build-fonts.py   # regenerate src/fonts.ts (needs fonttools + brotli)
-npm run build            # bundle into dist/, commit it together with sources
 ```
 
 Uses `gh auth token` by default, or set `RPK_TOKEN`.
+
+## License
+
+Code under the [MIT License](LICENSE). The cards embed a subset of [JetBrains Mono Nerd Font](https://github.com/ryanoasis/nerd-fonts), licensed under the [SIL Open Font License 1.1](LICENSE-FONT).

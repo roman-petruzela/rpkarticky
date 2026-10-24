@@ -1,5 +1,5 @@
 name: rpkarticky
-description: "Generate GitHub stats and top languages cards as SVG for your profile README"
+description: "GitHub stats card for your profile README, styled like a niri desktop with btop boxes"
 author: roman-petruzela
 branding:
   icon: bar-chart-2
@@ -12,9 +12,6 @@ inputs:
   username:
     description: "GitHub login to generate cards for"
     default: ${{ github.repository_owner }}
-  design:
-    description: "Card design: niri, btop, fetch or pacman"
-    default: niri
   output-dir:
     description: "Directory where SVGs are written"
     default: .

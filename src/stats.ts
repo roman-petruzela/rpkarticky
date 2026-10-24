@@ -23,6 +23,8 @@ export type Stats = {
   heatmap: (number | null)[][];
   // weekly totals of the heatmap columns
   weekly: number[];
+  // the last 7 days, oldest first, ending today
+  last7: Day[];
   languages: Language[]; // top N only
   languageCount: number; // all distinct languages across own repos
 };
@@ -114,6 +116,7 @@ export function computeStats(user: RawUser, login: string, topLangs = 8): Stats 
     longestStreak: longest,
     weekdays,
     heatmap: grid,
+    last7: days.slice(-7),
     weekly: grid.map((w) => w.reduce<number>((sum, v) => sum + (v ?? 0), 0)),
     languages: langs.top,
     languageCount: langs.count,

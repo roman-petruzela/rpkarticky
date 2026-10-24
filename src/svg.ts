@@ -1,5 +1,5 @@
-import { bold, regular } from "../fonts.ts";
-import type { Stats } from "../stats.ts";
+import { bold, regular } from "./fonts.ts";
+import type { Stats } from "./stats.ts";
 
 export type Mode = "dark" | "light";
 
@@ -54,12 +54,11 @@ export const palettes: Record<Mode, Palette> = {
 };
 
 export type Ctx = { stats: Stats; p: Palette; mode: Mode };
-export type Design = { name: string; description: string; render: (ctx: Ctx) => string };
 
 // JetBrains Mono advance width is 600/1000 em, which makes column layout exact
 export const charW = (size: number) => size * 0.6;
 
-export const FONT = "rpk, 'JetBrainsMono Nerd Font Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+const FONT = "rpk, 'JetBrainsMono Nerd Font Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
 
 export const escape = (s: string) =>
   s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -70,8 +69,6 @@ export const plural = (n: number, word: string) => `${fmt(n)} ${word}${n === 1 ?
 
 export const truncate = (s: string, max: number) =>
   s.length > max ? `${s.slice(0, max - 1)}…` : s;
-
-export const pad = (s: string, len: number) => s + " ".repeat(Math.max(0, len - s.length));
 
 // Mix a hex color with another, t = 0 -> a, t = 1 -> b
 export function mix(a: string, b: string, t: number) {
@@ -89,6 +86,59 @@ export function mix(a: string, b: string, t: number) {
 export function level(count: number, max: number) {
   if (count <= 0 || max <= 0) return 0;
   return Math.min(4, Math.ceil(Math.sqrt(count / max) * 4));
+}
+
+const SUP = ["¹", "²", "³", "⁴", "⁵", "⁶"];
+
+// btop box: rounded frame with the title (and optionally a right label) set into the top border.
+// The border is drawn as a path with gaps, so it works on any background.
+export function btopBox(x: number, y: number, w: number, h: number, n: number, title: string, color: string, p: Palette, extra = "", fill = "none") {
+  const cw = charW(12.5);
+  const r = 6;
+  const tx = x + 16;
+  const tEnd = tx + (title.length + 3) * cw;
+  const ew = extra ? (extra.length + 2) * cw : 0;
+  const eStart = x + w - 16 - ew;
+
+  const top = extra ? `M${tEnd} ${y} H${eStart} M${eStart + ew} ${y}` : `M${tEnd} ${y}`;
+  const d = `${top} H${x + w - r} A${r} ${r} 0 0 1 ${x + w} ${y + r} V${y + h - r} A${r} ${r} 0 0 1 ${x + w - r} ${y + h} H${x + r} A${r} ${r} 0 0 1 ${x} ${y + h - r} V${y + r} A${r} ${r} 0 0 1 ${x + r} ${y} H${tx}`;
+
+  let out = fill === "none" ? "" : `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="${fill}"/>`;
+  out += `<path d="${d}" fill="none" stroke="${color}" stroke-width="1.2"/>`;
+  out += `<text x="${tx + cw}" y="${y + 4}" style="font-size:12.5px;font-weight:700;fill:${p.fg}"><tspan style="fill:${color}">${SUP[n - 1]}</tspan>${escape(title)}</text>`;
+  if (extra) {
+    out += `<text x="${x + w - 16 - cw}" y="${y + 4}" text-anchor="end" style="font-size:11px;fill:${p.dim}">${escape(extra)}</text>`;
+  }
+  return out;
+}
+
+// btop's default gradient goes green -> yellow -> red with intensity
+function heat(p: Palette, t: number) {
+  return t < 0.5 ? mix(p.green, p.yellow, t * 2) : mix(p.yellow, p.red, (t - 0.5) * 2);
+}
+
+// btop-style graph: two dot columns per value like a braille cell, the left one interpolated
+export function dotGraph(opts: { x: number; baseY: number; w: number; values: number[]; p: Palette; rows?: number; rowH?: number }) {
+  const { x, baseY, w, values, p, rows = 18, rowH = 5.2 } = opts;
+  const max = Math.max(...values, 1);
+  const cols: number[] = [];
+  values.forEach((v, i) => {
+    const prev = values[i - 1] ?? v;
+    cols.push((prev + v) / 2, v);
+  });
+  const step = w / cols.length;
+
+  let out = "";
+  cols.forEach((v, i) => {
+    const n = v > 0 ? Math.max(1, Math.round((v / max) * rows)) : 0;
+    const cx = (x + i * step + step / 2).toFixed(2);
+    for (let r = 0; r < rows; r++) {
+      const cy = (baseY - r * rowH).toFixed(2);
+      if (r < n) out += `<circle cx="${cx}" cy="${cy}" r="1.6" fill="${heat(p, r / (rows - 1))}"/>`;
+      else if (r === 0) out += `<circle cx="${cx}" cy="${cy}" r="0.9" fill="${p.faint}"/>`;
+    }
+  });
+  return out;
 }
 
 export function svg(opts: { width: number; height: number; title: string; style?: string; body: string }) {

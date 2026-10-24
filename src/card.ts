@@ -1,20 +1,10 @@
-import { icons } from "../fonts.ts";
-import { charW, escape, fmt, level, mix, svg, truncate, type Ctx, type Design } from "./shared.ts";
+import { icons } from "./fonts.ts";
+import { btopBox, charW, dotGraph, escape, fmt, level, mix, plural, svg, truncate, type Ctx } from "./svg.ts";
 
 const W = 840;
 const GAP = 12; // niri "gaps"
-const RADIUS = 10;
+const RADIUS = 6;
 const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-// niri's focus ring sits outside the window with a small offset
-function window(x: number, y: number, w: number, h: number, ctx: Ctx, focused = false) {
-  const { p } = ctx;
-  const ring = focused
-    ? `<rect x="${x - 3}" y="${y - 3}" width="${w + 6}" height="${h + 6}" rx="${RADIUS + 3}" fill="none" stroke="${p.blue}" stroke-width="2.5"/>`
-    : `<rect x="${x - 0.5}" y="${y - 0.5}" width="${w + 1}" height="${h + 1}" rx="${RADIUS}" fill="none" stroke="${p.line}"/>`;
-  return `${ring}<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${RADIUS}" fill="${p.bg}"/>`;
-}
 
 // waybar: weekdays as workspaces, busiest one active, streak modules on the right
 function bar(ctx: Ctx, y: number) {
@@ -51,45 +41,43 @@ function bar(ctx: Ctx, y: number) {
   return { svg: out, bottom: y + h };
 }
 
-function heatmapWindow(ctx: Ctx, x: number, y: number, w: number) {
+// btop's dotted weekly graph; the header shows the last 7 days as a row of tiles
+function activityWindow(ctx: Ctx, x: number, y: number, w: number) {
   const { stats: s, p } = ctx;
-  const cell = 11;
-  const step = 14;
-  const gridW = s.heatmap.length * step - (step - cell);
-  const gx = x + w - 20 - gridW;
-  const gy = y + 52;
-  const h = 52 + 7 * step + 14;
+  const h = 172;
+  const gx = x + 20;
+  const sideW = 160;
+  const gw = w - 40 - sideW - 20;
+  const baseY = y + h - 34;
 
-  const max = Math.max(...s.heatmap.flat().map((v) => v ?? 0), 1);
+  let out = btopBox(x, y, w, h, 1, "activity", p.blue, p, `${s.weekly.length}w`, p.bg);
+
+  const week = s.last7;
+  const total = week.reduce((sum, d) => sum + d.count, 0);
+  const max = Math.max(...week.map((d) => d.count), 1);
   const empty = mix(p.bg, p.fg, 0.07);
   const shades = [empty, mix(empty, p.green, 0.4), mix(empty, p.green, 0.62), mix(empty, p.green, 0.82), p.green];
-
-  let out = window(x, y, w, h, ctx, true);
-  out += `<text x="${x + 20}" y="${y + 26}" class="title">${fmt(s.contributionsYear)} contributions <tspan class="dim" font-weight="400">in the last year</tspan></text>`;
-
-  // month labels at the first column whose Sunday falls into a new month
-  const today = new Date();
-  const sunday = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
-  sunday.setUTCDate(sunday.getUTCDate() - sunday.getUTCDay());
-  let lastMonth = -1;
-  s.heatmap.forEach((week, c) => {
-    const d = new Date(sunday);
-    d.setUTCDate(d.getUTCDate() - (s.heatmap.length - 1 - c) * 7);
-    if (d.getUTCMonth() !== lastMonth && c < s.heatmap.length - 2) {
-      if (lastMonth !== -1 || d.getUTCDate() <= 7) {
-        out += `<text x="${gx + c * step}" y="${gy - 8}" class="faint">${MONTHS[d.getUTCMonth()]}</text>`;
-      }
-      lastMonth = d.getUTCMonth();
-    }
-    week.forEach((v, r) => {
-      if (v === null) return;
-      out += `<rect x="${gx + c * step}" y="${gy + r * step}" width="${cell}" height="${cell}" rx="2.5" fill="${shades[level(v, max)]}"><title>${v}</title></rect>`;
-    });
+  const sq = 15;
+  const sqGap = 4;
+  const rowY = y + 16;
+  week.forEach((d, i) => {
+    out += `<rect x="${gx + i * (sq + sqGap)}" y="${rowY}" width="${sq}" height="${sq}" rx="4" fill="${shades[level(d.count, max)]}"><title>${DAYS[d.weekday]} ${d.date}: ${d.count}</title></rect>`;
   });
-  // GitHub labels Mon, Wed, Fri
-  [1, 3, 5].forEach((r) => {
-    out += `<text x="${x + 20}" y="${gy + r * step + 9}" class="faint">${DAYS[r]}</text>`;
-  });
+  const textX = gx + 7 * (sq + sqGap) + 8;
+  out += `<text x="${textX}" y="${rowY + 12}" class="title">${plural(total, "contribution")} <tspan class="dim" font-weight="400">in the last week</tspan></text>`;
+
+  out += dotGraph({ x: gx, baseY, w: gw, values: s.weekly, p });
+  out += `<text x="${gx}" y="${baseY + 20}" class="faint">52 weeks ago</text>`;
+  out += `<text x="${gx + gw}" y="${baseY + 20}" text-anchor="end" class="faint">this week</text>`;
+
+  // btop-style summary on the right
+  const sx = x + w - 20 - sideW;
+  const peak = Math.max(...s.weekly);
+  out += `<text x="${sx}" y="${y + 62}" class="big">${fmt(s.contributionsYear)}</text>`;
+  out += `<text x="${sx}" y="${y + 80}" class="dim">contributions</text>`;
+  out += `<text x="${sx}" y="${y + 95}" class="faint">in the last 365 days</text>`;
+  out += `<text x="${sx}" y="${y + 122}" class="dim">peak <tspan class="val">${fmt(peak)}</tspan>/week</text>`;
+  out += `<text x="${sx}" y="${y + 138}" class="dim">avg  <tspan class="val">${(s.contributionsYear / 52).toFixed(1)}</tspan>/week</text>`;
 
   return { svg: out, bottom: y + h };
 }
@@ -99,19 +87,17 @@ function statsWindow(ctx: Ctx, x: number, y: number, w: number, h: number) {
   const items = [
     { icon: icons.star, color: p.yellow, value: s.stars, label: "stars earned" },
     { icon: icons.commit, color: p.orange, value: s.commits, label: "commits total" },
-    { icon: icons.flame, color: p.red, value: s.currentStreak, label: "day streak" },
-    { icon: icons.trophy, color: p.yellow, value: s.longestStreak, label: "longest streak" },
     { icon: icons.repo, color: p.blue, value: s.repos, label: "repositories" },
     { icon: icons.pr, color: p.magenta, value: s.prs, label: "pull requests" },
     { icon: icons.forked, color: p.cyan, value: s.contributedTo, label: "contributed to" },
     { icon: icons.code, color: p.green, value: s.languageCount, label: "languages used" },
   ];
   const colW = (w - 40) / 2;
-  const rowH = (h - 32) / 4;
-  let out = window(x, y, w, h, ctx);
+  const rowH = (h - 32) / 3;
+  let out = btopBox(x, y, w, h, 2, "stats", p.green, p, "", p.bg);
   items.forEach((it, i) => {
     const ix = x + 20 + (i % 2) * colW;
-    const iy = y + 22 + Math.floor(i / 2) * rowH;
+    const iy = y + 26 + Math.floor(i / 2) * rowH;
     out += `<rect x="${ix}" y="${iy}" width="30" height="30" rx="8" fill="${mix(p.bg, it.color, 0.16)}"/>`;
     out += `<text x="${ix + 15}" y="${iy + 20}" text-anchor="middle" class="icon" fill="${it.color}">${it.icon}</text>`;
     out += `<text x="${ix + 42}" y="${iy + 14}" class="value">${fmt(it.value)}</text>`;
@@ -129,7 +115,7 @@ function langsWindow(ctx: Ctx, x: number, y: number, w: number, h: number) {
   const circ = 2 * Math.PI * r;
   const gapLen = 2.5;
 
-  let out = window(x, y, w, h, ctx);
+  let out = btopBox(x, y, w, h, 3, "languages", p.magenta, p, `top ${s.languages.length} of ${s.languageCount}`, p.bg);
   let offset = 0;
   for (const l of s.languages) {
     const len = (l.percent / 100) * circ;
@@ -154,24 +140,23 @@ function langsWindow(ctx: Ctx, x: number, y: number, w: number, h: number) {
   return out;
 }
 
-export const niri: Design = {
-  name: "niri",
-  description: "niri desktop: waybar with weekdays as workspaces, tiled windows with heatmap, stats and a language donut",
-  render(ctx) {
-    const { stats: s, p } = ctx;
-    const top = bar(ctx, GAP);
-    const heat = heatmapWindow(ctx, GAP, top.bottom + GAP + 2, W - GAP * 2);
-    const rowY = heat.bottom + GAP + 2;
-    const rowH = 184;
-    const half = (W - GAP * 3) / 2;
-    const height = rowY + rowH + GAP;
+// niri desktop: waybar with weekdays as workspaces, tiled btop-style boxes below
+export function renderCard(ctx: Ctx) {
+  const { stats: s, p } = ctx;
+  const top = bar(ctx, GAP);
+  const activity = activityWindow(ctx, GAP, top.bottom + GAP + 2, W - GAP * 2);
+  const rowY = activity.bottom + GAP + 2;
+  const rowH = 184;
+  const half = (W - GAP * 3) / 2;
+  const height = rowY + rowH + GAP;
 
-    return svg({
-      width: W,
-      height,
-      title: `${s.name}'s GitHub stats`,
-      style: `
-text { font-size: 12px; fill: ${p.fg}; }
+  return svg({
+    width: W,
+    height,
+    title: `${s.name}'s GitHub stats`,
+    style: `
+svg { fill: ${p.fg}; }
+text { font-size: 12px; }
 .icon { font-size: 15px; }
 .ws { font-size: 11px; font-weight: 700; }
 .mod { font-size: 12px; }
@@ -179,12 +164,13 @@ text { font-size: 12px; fill: ${p.fg}; }
 .value { font-size: 15px; font-weight: 700; fill: ${p.fg}; }
 .small { font-size: 11.5px; }
 .dim { fill: ${p.dim}; }
-.faint { font-size: 10.5px; fill: ${p.dim}; }`,
-      body: `<rect width="${W}" height="${height}" fill="${p.surface}"/>
+.faint { font-size: 10.5px; fill: ${p.dim}; }
+.big { font-size: 30px; font-weight: 700; fill: ${p.fg}; }
+.val { font-weight: 700; fill: ${p.fg}; }`,
+    body: `<rect width="${W}" height="${height}" fill="${p.surface}"/>
 ${top.svg}
-${heat.svg}
+${activity.svg}
 ${statsWindow(ctx, GAP, rowY, half, rowH)}
 ${langsWindow(ctx, GAP * 2 + half, rowY, half, rowH)}`,
-    });
-  },
-};
+  });
+}

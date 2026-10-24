@@ -43,9 +43,8 @@ try {
   const token = core.getInput("token", { required: true });
   const login = core.getInput("username", { required: true });
   const outDir = core.getInput("output-dir") || ".";
-  const design = core.getInput("design") || "niri";
 
-  const paths = writeCards(await loadStats(login, token), outDir, design);
+  const paths = writeCards(await loadStats(login, token), outDir);
   core.info(`Generated ${paths.join(", ")}`);
 
   if (core.getBooleanInput("commit")) {
