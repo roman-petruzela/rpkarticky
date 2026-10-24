@@ -69,6 +69,30 @@ By default the action only sees your public repositories. To count private ones 
           token: ${{ secrets.STATS_TOKEN }}
 ```
 
+## Self-host on Vercel (fresher stats)
+
+The action updates the card once a day. If you'd rather have it refresh every 30 minutes and skip the bot commits, deploy your own copy to Vercel. The card is then rendered on request and your README points at its URL.
+
+1. Fork this repository and import it on [vercel.com/new](https://vercel.com/new). Keep the default settings, `vercel.json` takes care of the build.
+2. In the project's **Settings** → **Environment Variables**, add:
+
+   | Variable | Value |
+   | --- | --- |
+   | `GITHUB_TOKEN` | a [classic token](https://github.com/settings/tokens/new) with the `repo` scope (or no scope for public data only) |
+   | `GITHUB_USERNAME` | optional, your login; defaults to the owner of the token |
+   | `CACHE_SECONDS` | optional, how long the card is cached, default `1800` |
+
+3. Redeploy, then use the card in your `README.md` (replace the domain with yours):
+
+```html
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://your-project.vercel.app/api/card?theme=dark">
+  <img src="https://your-project.vercel.app/api/card?theme=light" alt="GitHub stats">
+</picture>
+```
+
+The endpoint only serves the user from `GITHUB_USERNAME` (or the token's owner), so nobody else can use up your token's rate limit. You don't need the workflow from above in this setup.
+
 ## Options
 
 | Input | Default | Description |
@@ -83,7 +107,7 @@ By default the action only sees your public repositories. To count private ones 
 
 ## FAQ
 
-**The card didn't change after an update.** GitHub caches images for a few minutes. Reload the page with Ctrl+Shift+R.
+**The card didn't change after an update.** GitHub caches images for a few minutes. Reload the page with Ctrl+Shift+R. With Vercel, the card is also cached for `CACHE_SECONDS`.
 
 **Why does it need `actions: write`?** GitHub turns off scheduled workflows in repositories without activity for 60 days. Since the action only commits when your stats change, a quiet profile would lose its schedule. On every run, the action re-enables its own workflow through the API, which resets that timer without any commit. Without the permission the card still works, you'll just see a warning.
 
@@ -96,7 +120,8 @@ npm install
 npm run dev                      # card for your gh account, open preview/index.html
 npm run dev -- torvalds          # any other user
 npm run dev -- --cached          # reuse preview/stats.json, no API calls
-npm run build                    # bundle into dist/, commit it together with the sources
+npm run build                    # bundle the action into dist/, commit it together with the sources
+npm run build:api                # bundle the Vercel function into api/card/, commit it as well
 python3 scripts/build-fonts.py   # regenerate src/fonts.ts (needs fonttools + brotli)
 ```
 

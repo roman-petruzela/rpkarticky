@@ -4,7 +4,8 @@
   "description": "GitHub stats cards as SVG for your profile README",
   "scripts": {
     "dev": "tsx src/cli.ts",
-    "build": "ncc build src/action.ts -o dist --minify"
+    "build": "ncc build src/action.ts -o dist --minify",
+    "build:api": "ncc build src/server.ts -o api/card --minify"
   },
   "keywords": [],
   "type": "module",
