@@ -118,8 +118,9 @@ function heat(p: Palette, t: number) {
 }
 
 // btop-style graph: two dot columns per value like a braille cell, the left one interpolated
-export function dotGraph(opts: { x: number; baseY: number; w: number; values: number[]; p: Palette; rows?: number; rowH?: number }) {
-  const { x, baseY, w, values, p, rows = 18, rowH = 5.2 } = opts;
+// Each column is a <g class="rise"> with a staggered delay, animated by the card's CSS.
+export function dotGraph(opts: { x: number; baseY: number; w: number; values: number[]; p: Palette; rows?: number; rowH?: number; duration?: number }) {
+  const { x, baseY, w, values, p, rows = 18, rowH = 5.2, duration = 900 } = opts;
   const max = Math.max(...values, 1);
   const cols: number[] = [];
   values.forEach((v, i) => {
@@ -132,11 +133,13 @@ export function dotGraph(opts: { x: number; baseY: number; w: number; values: nu
   cols.forEach((v, i) => {
     const n = v > 0 ? Math.max(1, Math.round((v / max) * rows)) : 0;
     const cx = (x + i * step + step / 2).toFixed(2);
+    out += `<g class="rise" style="animation-delay:${Math.round((i / cols.length) * duration)}ms">`;
     for (let r = 0; r < rows; r++) {
       const cy = (baseY - r * rowH).toFixed(2);
       if (r < n) out += `<circle cx="${cx}" cy="${cy}" r="1.6" fill="${heat(p, r / (rows - 1))}"/>`;
       else if (r === 0) out += `<circle cx="${cx}" cy="${cy}" r="0.9" fill="${p.faint}"/>`;
     }
+    out += "</g>";
   });
   return out;
 }

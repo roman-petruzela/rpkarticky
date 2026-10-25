@@ -24,7 +24,7 @@ function bar(ctx: Ctx, y: number) {
     out += `<text x="${x + 14}" y="${y + 19}" text-anchor="middle" class="ws" fill="${active ? p.bg : p.fg}">${d}</text>`;
   });
 
-  out += `<text x="${W / 2}" y="${y + 20}" text-anchor="middle" class="title">${escape(s.login)}</text>`;
+  out += `<text x="${W / 2}" y="${y + 20}" text-anchor="middle" class="title">${escape(s.login)}<tspan class="cursor" fill="${p.blue}">▍</tspan></text>`;
 
   const modules = [
     { icon: icons.flame, text: `${s.currentStreak}d streak`, color: p.orange },
@@ -61,7 +61,7 @@ function activityWindow(ctx: Ctx, x: number, y: number, w: number) {
   const sqGap = 4;
   const rowY = y + 16;
   week.forEach((d, i) => {
-    out += `<rect x="${gx + i * (sq + sqGap)}" y="${rowY}" width="${sq}" height="${sq}" rx="4" fill="${shades[level(d.count, max)]}"><title>${DAYS[d.weekday]} ${d.date}: ${d.count}</title></rect>`;
+    out += `<rect class="pop" style="animation-delay:${900 + i * 70}ms" x="${gx + i * (sq + sqGap)}" y="${rowY}" width="${sq}" height="${sq}" rx="4" fill="${shades[level(d.count, max)]}"><title>${DAYS[d.weekday]} ${d.date}: ${d.count}</title></rect>`;
   });
   const textX = gx + 7 * (sq + sqGap) + 8;
   out += `<text x="${textX}" y="${rowY + 12}" class="title">${plural(total, "contribution")} <tspan class="dim" font-weight="400">in the last week</tspan></text>`;
@@ -119,7 +119,8 @@ function langsWindow(ctx: Ctx, x: number, y: number, w: number, h: number) {
   let offset = 0;
   for (const l of s.languages) {
     const len = (l.percent / 100) * circ;
-    out += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${l.color}" stroke-width="${sw}" stroke-dasharray="${Math.max(len - gapLen, 0.5).toFixed(2)} ${(circ - len + gapLen).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})"><title>${escape(l.name)} ${l.percent.toFixed(1)}%</title></circle>`;
+    const timing = `animation-delay:${Math.round(200 + (offset / circ) * 800)}ms;animation-duration:${Math.max(Math.round((len / circ) * 800), 40)}ms`;
+    out += `<circle class="draw" style="${timing}" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${l.color}" stroke-width="${sw}" stroke-dasharray="${Math.max(len - gapLen, 0.5).toFixed(2)} ${(circ - len + gapLen).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})"><title>${escape(l.name)} ${l.percent.toFixed(1)}%</title></circle>`;
     offset += len;
   }
   const top = s.languages[0];
@@ -166,7 +167,17 @@ text { font-size: 12px; }
 .dim { fill: ${p.dim}; }
 .faint { font-size: 10.5px; fill: ${p.dim}; }
 .big { font-size: 30px; font-weight: 700; fill: ${p.fg}; }
-.val { font-weight: 700; fill: ${p.fg}; }`,
+.val { font-weight: 700; fill: ${p.fg}; }
+/* one load sequence: graph rises left to right, donut draws, last week tiles pop in */
+.rise { transform-box: fill-box; transform-origin: 50% 100%; animation: rise 450ms cubic-bezier(.2,.7,.3,1) both; }
+@keyframes rise { from { transform: scaleY(0); } }
+.draw { animation-name: draw; animation-timing-function: linear; animation-fill-mode: both; }
+@keyframes draw { from { stroke-dasharray: 0 400; } }
+.pop { transform-box: fill-box; transform-origin: center; animation: pop 350ms cubic-bezier(.3,1.5,.5,1) both; }
+@keyframes pop { from { transform: scale(.3); opacity: 0; } }
+.cursor { animation: blink 1.1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .rise, .draw, .pop, .cursor { animation: none; } }`,
     body: `<rect width="${W}" height="${height}" fill="${p.surface}"/>
 ${top.svg}
 ${activity.svg}
